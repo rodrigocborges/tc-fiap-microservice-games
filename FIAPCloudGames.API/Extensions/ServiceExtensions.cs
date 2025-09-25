@@ -1,10 +1,7 @@
 ﻿using FIAPCloudGames.Application.Services;
-using FIAPCloudGames.Domain.Entities;
 using FIAPCloudGames.Domain.Interfaces;
 using FIAPCloudGames.Domain.ViewModels;
-using FIAPCloudGames.Infrastructure.DatabaseContext;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
@@ -75,7 +72,6 @@ public static class ServiceExtensions
             }
         );
 
-        builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("Main")));
 
         builder.Services.AddHttpClient("Elasticsearch", client =>
         {

@@ -53,7 +53,7 @@ namespace FIAPCloudGames.Application.Services
             // O documento real está dentro do campo "_source"
             var source = jObject["_source"]?.ToString();
 
-            return source != null ? JsonConvert.DeserializeObject<T>(source, new PriceConverter()) : null;
+            return source != null ? JsonConvert.DeserializeObject<T>(source) : null;
         }
         public async Task DeleteDocumentAsync(string id)
         {

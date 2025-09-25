@@ -62,7 +62,7 @@ public static class GameEndpoints
             await service.Delete(id: id);
 
             return Results.NoContent();
-        }).AllowAnonymous();
+        }).RequireAuthorization("AdminOnly");
 
         group.MapPost("/", async (IGameService service, [FromBody] CreateGameRequest request) =>
         {
@@ -78,7 +78,7 @@ public static class GameEndpoints
             });
 
             return Results.Created();
-        }).AllowAnonymous();//.RequireAuthorization("AdminOnly");
+        }).RequireAuthorization("AdminOnly");
 
         group.MapPatch("/{id:guid}", async (IGameService service, [FromRoute] Guid id, [FromBody] UpdateGameRequest request) => {
             if (request == null)
