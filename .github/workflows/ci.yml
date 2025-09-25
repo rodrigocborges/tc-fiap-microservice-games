@@ -1,0 +1,36 @@
+name: 'CI - Build and Test'
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest # O job será executado em uma máquina virtual Linux.
+
+    steps:
+    # Pega o código do seu repositório.
+    - name: 'Checkout'
+      uses: actions/checkout@v4
+
+    # Configura o ambiente .NET 9.
+    - name: 'Setup .NET 9'
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    # Restaura as dependências do projeto.
+    - name: 'Restore Dependencies'
+      run: dotnet restore FIAPCloudGames.sln
+
+    # Compila a solução inteira em modo Release.
+    - name: 'Build Project in Release'
+      run: dotnet build FIAPCloudGames.sln --configuration Release --no-restore
+
+    # Executa os testes do projeto de testes.
+    - name: 'Run Tests'
+      run: dotnet test FIAPCloudGames.Tests/FIAPCloudGames.Tests.csproj --no-build --configuration Release
