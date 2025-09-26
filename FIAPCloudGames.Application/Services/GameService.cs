@@ -2,16 +2,18 @@
 using FIAPCloudGames.Domain.Enumerators;
 using FIAPCloudGames.Domain.Interfaces;
 using FIAPCloudGames.Domain.ViewModels;
+using Newtonsoft.Json;
 
 namespace FIAPCloudGames.Application.Services
 {
     public class GameService : IGameService
     {
         private readonly IElasticSearchService<GameViewModel> _elasticSearchService;
-
-        public GameService(IElasticSearchService<GameViewModel> elasticSearchService)
+        private readonly IEventRepository _event;
+        public GameService(IElasticSearchService<GameViewModel> elasticSearchService, IEventRepository @event)
         {
             _elasticSearchService = elasticSearchService;
+            _event = @event;
         }
 
         public async Task<Guid> Create(GameViewModel model)
@@ -19,8 +21,10 @@ namespace FIAPCloudGames.Application.Services
             var gameFound = await FindByName(model.Name);
             if (gameFound != null)
                 throw new InvalidOperationException("Já existe um game com esse nome!");
-
+            
             await _elasticSearchService.IndexDocumentAsync(model);
+            await _event.Save(new DomainEvent(model.Id, "GameCreated", JsonConvert.SerializeObject(model)));
+
             return model.Id;
         }
 
@@ -29,11 +33,14 @@ namespace FIAPCloudGames.Application.Services
             // O método IndexDocumentAsync do Elasticsearch funciona como um "upsert":
             // se o documento com o ID já existe, ele é atualizado.
             await _elasticSearchService.IndexDocumentAsync(model);
+            await _event.Save(new DomainEvent(model.Id, "GameUpdated", JsonConvert.SerializeObject(model)));
         }
 
         public async Task Delete(Guid id)
-            => await _elasticSearchService.DeleteDocumentAsync(id.ToString());
-
+        {
+            await _elasticSearchService.DeleteDocumentAsync(id.ToString());
+            await _event.Save(new DomainEvent(id, "GameDeleted"));
+        }
         public async Task<GameViewModel?> Find(Guid id)
             => await _elasticSearchService.GetDocumentAsync(id.ToString());
 

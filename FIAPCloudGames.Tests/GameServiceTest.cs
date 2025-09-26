@@ -13,7 +13,8 @@ namespace FIAPCloudGames.Tests
         {
             // Arrange
             var fakeElasticService = new FakeElasticSearchService();
-            var service = new GameService(fakeElasticService);
+            var fakeEventRepository = new FakeEventRepository();
+            var service = new GameService(fakeElasticService, fakeEventRepository);
 
             var request = new CreateGameRequest
             {
@@ -26,7 +27,7 @@ namespace FIAPCloudGames.Tests
             var newGame = new Game(request.Name, request.Description, request.Price, request.Category, request.ReleaseDate);
 
             // Act
-            var resultId = await service.Create(newGame);
+            var resultId = await service.Create(newGame.ToViewModel());
 
             // Assert
             Assert.Equal(newGame.Id, resultId); // O ID retornado deve ser o mesmo do objeto criado
@@ -40,7 +41,8 @@ namespace FIAPCloudGames.Tests
         {
             // Arrange
             var fakeElasticService = new FakeElasticSearchService(); // Já contém "Minecraft"
-            var service = new GameService(fakeElasticService);
+            var fakeEventRepository = new FakeEventRepository();
+            var service = new GameService(fakeElasticService, fakeEventRepository);
 
             var request = new CreateGameRequest
             {
@@ -56,7 +58,7 @@ namespace FIAPCloudGames.Tests
             // Act & Assert
             await Assert.ThrowsAsync<InvalidOperationException>(async () =>
             {
-                await service.Create(newGame);
+                await service.Create(newGame.ToViewModel());
             });
         }
     }

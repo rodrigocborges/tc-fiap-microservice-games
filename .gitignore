@@ -401,3 +401,4 @@ FodyWeavers.xsd
 *.sln.iml
 /FIAPCloudGames.API/appsettings.json
 /FIAPCloudGames.API/appsettings.Development.json
+*.db

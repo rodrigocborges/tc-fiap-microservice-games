@@ -1,6 +1,8 @@
 ﻿using FIAPCloudGames.Application.Services;
 using FIAPCloudGames.Domain.Interfaces;
 using FIAPCloudGames.Domain.ViewModels;
+using FIAPCloudGames.Infrastructure.Repositories;
+using LiteDB;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -82,9 +84,10 @@ public static class ServiceExtensions
         });
 
         #region Injeção de dependências
+        builder.Services.AddSingleton<ILiteDatabase>(_ => new LiteDatabase("event_store.db"));
+        builder.Services.AddTransient<IEventRepository, EventRepository>();
         builder.Services.AddTransient<IElasticSearchService<GameViewModel>, ElasticSearchService<GameViewModel>>();
         builder.Services.AddTransient<IGameService, GameService>();
-
         #endregion
     }
 
