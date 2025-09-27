@@ -29,7 +29,8 @@ public static class GameEndpoints
                 return Results.Conflict();
         }).AllowAnonymous();
 
-        group.MapGet("/", async (IGameService service, [FromQuery] int page = 1, [FromQuery] int pageSize = 10) => {
+        group.MapGet("/", async (IGameService service, [FromQuery] int page = 1, [FromQuery] int pageSize = 10) => 
+        {
 
             if (page <= 0)
                 page = 1;
@@ -92,7 +93,7 @@ public static class GameEndpoints
                 ReleaseDate = request.ReleaseDate.ToUniversalTime()
             });
 
-            return Results.Created();
+            return Results.Ok(new { Id = id });
         }).RequireAuthorization("AdminOnly");
 
         group.MapPatch("/{id:guid}", async (IGameService service, [FromRoute] Guid id, [FromBody] UpdateGameRequest request) => {
