@@ -14,6 +14,21 @@ public static class GameEndpoints
     {
         var group = app.MapGroup("/games");
 
+        //Um método só para gerar erros e poder captar nos logs
+        group.MapGet("/random-errors", () =>
+        {
+            var random = new Random();
+            int randomValue = random.Next(0, 20);
+            if (randomValue >= 0 && randomValue <= 5)
+                return Results.UnprocessableEntity();
+            else if (randomValue > 5 && randomValue <= 10)
+                return Results.Unauthorized();
+            else if (randomValue > 10 && randomValue <= 15)
+                return Results.InternalServerError();
+            else
+                return Results.Conflict();
+        }).AllowAnonymous();
+
         group.MapGet("/", async (IGameService service, [FromQuery] int page = 1, [FromQuery] int pageSize = 10) => {
 
             if (page <= 0)
