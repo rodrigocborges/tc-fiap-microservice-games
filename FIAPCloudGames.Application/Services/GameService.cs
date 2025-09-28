@@ -86,7 +86,7 @@ namespace FIAPCloudGames.Application.Services
         /// <param name="minPrice">Preço mínimo.</param>
         /// <param name="maxPrice">Preço máximo.</param>
         /// <returns>Uma coleção de jogos que atendem aos critérios.</returns>
-        public async Task<ICollection<GameViewModel>> AdvancedSearch(string? term, GameCategory? category, decimal? minPrice, decimal? maxPrice)
+        public async Task<ICollection<GameViewModel>> AdvancedSearch(int skip, int take, string? term, GameCategory? category, decimal? minPrice, decimal? maxPrice)
         {
             var mustClauses = new List<string>();
 
@@ -97,7 +97,7 @@ namespace FIAPCloudGames.Application.Services
                 {{
                   ""multi_match"": {{
                     ""query"": ""{term}"",
-                    ""fields"": [""name"", ""description""]
+                    ""fields"": [""Name"", ""Description""]
                   }}
                 }}");
             }
@@ -108,7 +108,7 @@ namespace FIAPCloudGames.Application.Services
                 mustClauses.Add($@"
                 {{
                   ""term"": {{
-                    ""category.keyword"": ""{category}""
+                    ""Category"": ""{category}""
                   }}
                 }}");
             }
@@ -117,18 +117,18 @@ namespace FIAPCloudGames.Application.Services
             var rangeClauses = new List<string>();
             if (minPrice.HasValue)
             {
-                rangeClauses.Add($"\"gte\": {minPrice.Value}");
+                rangeClauses.Add($"\"gte\": {minPrice.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)}");
             }
             if (maxPrice.HasValue)
             {
-                rangeClauses.Add($"\"lte\": {maxPrice.Value}");
+                rangeClauses.Add($"\"lte\": {maxPrice.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)}");
             }
             if (rangeClauses.Any())
             {
                 mustClauses.Add($@"
                 {{
                   ""range"": {{
-                    ""price.value"": {{
+                    ""Price"": {{
                       {string.Join(", ", rangeClauses)}
                     }}
                   }}
@@ -137,6 +137,8 @@ namespace FIAPCloudGames.Application.Services
 
             var query = $@"
             {{
+              ""from"": {skip},
+              ""size"": {take},
               ""query"": {{
                 ""bool"": {{
                   ""must"": [
@@ -160,7 +162,7 @@ namespace FIAPCloudGames.Application.Services
               ""aggs"": {
                 ""games_by_category"": {
                   ""terms"": {
-                    ""field"": ""category"" 
+                    ""field"": ""Category"" 
                   }
                 }
               }

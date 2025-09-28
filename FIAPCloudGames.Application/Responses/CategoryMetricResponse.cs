@@ -1,10 +1,11 @@
-﻿using Newtonsoft.Json;
+﻿using FIAPCloudGames.Domain.Enumerators;
+using Newtonsoft.Json;
 
 namespace FIAPCloudGames.Application.Responses;
 public class CategoryMetric
 {
     [JsonProperty("key")]
-    public string CategoryName { get; set; }
+    public GameCategory CategoryId { get; set; }
 
     [JsonProperty("doc_count")]
     public int GameCount { get; set; }

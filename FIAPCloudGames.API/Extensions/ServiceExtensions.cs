@@ -89,15 +89,17 @@ public static class ServiceExtensions
         builder.Services.AddTransient<IElasticSearchService<GameViewModel>, ElasticSearchService<GameViewModel>>();
         builder.Services.AddTransient<IGameService, GameService>();
         #endregion
+
+        builder.Services.AddApplicationInsightsTelemetry(options =>
+        {
+            options.ConnectionString = builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
+        });
     }
 
     public static void UseServices(this WebApplication app)
     {
-        if (app.Environment.IsDevelopment())
-        {
-            app.UseSwagger();
-            app.UseSwaggerUI();
-        }
+        app.UseSwagger();
+        app.UseSwaggerUI();
 
         app.UseHttpsRedirection();
         app.UseCustomExceptionHandling();

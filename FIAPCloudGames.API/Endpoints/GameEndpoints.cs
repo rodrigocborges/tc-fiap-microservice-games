@@ -1,6 +1,7 @@
 ﻿using FIAPCloudGames.API.Extensions;
 using FIAPCloudGames.Application.Requests;
 using FIAPCloudGames.Application.Responses;
+using FIAPCloudGames.Domain.Enumerators;
 using FIAPCloudGames.Domain.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
@@ -29,7 +30,15 @@ public static class GameEndpoints
                 return Results.Conflict();
         }).AllowAnonymous();
 
-        group.MapGet("/", async (IGameService service, [FromQuery] int page = 1, [FromQuery] int pageSize = 10) => 
+        group.MapGet("/", async (
+            IGameService service, 
+            [FromQuery] int page = 1, 
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? term = null,
+            [FromQuery] decimal? minPrice = null,
+            [FromQuery] decimal? maxPrice = null,
+            [FromQuery] GameCategory? category = null
+        ) => 
         {
 
             if (page <= 0)
@@ -43,7 +52,11 @@ public static class GameEndpoints
 
             int skip = (page - 1) * pageSize;
 
-            var games = await service.FindAll(skip: skip, take: pageSize);
+            bool getAll = string.IsNullOrWhiteSpace(term) && minPrice == null && maxPrice == null && category == null;
+
+            var games = getAll 
+                ? await service.FindAll(skip: skip, take: pageSize)
+                : await service.AdvancedSearch(skip: skip, take: pageSize, term: term, category: category, minPrice: minPrice, maxPrice: maxPrice);
 
             return Results.Ok(games?.Select(item => new GetGameResponse { 
                 Id = item.Id, 
