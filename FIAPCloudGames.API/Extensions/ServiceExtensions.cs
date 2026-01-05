@@ -79,8 +79,7 @@ public static class ServiceExtensions
         {
             var config = builder.Configuration.GetSection("Elasticsearch");
             client.BaseAddress = new Uri(config["Url"].ToString());
-            byte[] credentialsByteArray = Encoding.ASCII.GetBytes(config["Credentials"].ToString());
-            client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", Convert.ToBase64String(credentialsByteArray));
+            client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("ApiKey", config["Credentials"].ToString());
         });
 
         #region Injeção de dependências
