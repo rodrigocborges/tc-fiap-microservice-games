@@ -29,6 +29,7 @@ spec:
           valueFrom:
             secretKeyRef:
               name: game-secrets
+              key: ConnectionStrings__Main
         - name: AuthKey
           valueFrom:
             secretKeyRef:
