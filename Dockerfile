@@ -30,6 +30,9 @@ ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
 # Copia os artefatos do estágio de build
 COPY --from=build /app/publish .
 
+# Isso permite que a aplicação crie o arquivo event_source.db
+RUN chown -R app:app /app
+
 # Define a porta
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080

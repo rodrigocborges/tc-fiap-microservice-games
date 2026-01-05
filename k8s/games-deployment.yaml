@@ -56,7 +56,7 @@ kind: Service
 metadata:
   name: games-service
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: games-service
   ports:
