@@ -1,9 +1,8 @@
 # Estágio 1: Build da Aplicação
-# SDK do .NET 9 para compilar e publicar a aplicação.
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /source
 
-# Copia os arquivos .csproj e restaura as dependências primeiro para aproveitar o cache do Docker.
+# Otimização de cache: Copia csproj e restaura antes de copiar o resto
 COPY *.sln .
 COPY FIAPCloudGames.API/*.csproj ./FIAPCloudGames.API/
 COPY FIAPCloudGames.Application/*.csproj ./FIAPCloudGames.Application/
@@ -12,37 +11,30 @@ COPY FIAPCloudGames.Infrastructure/*.csproj ./FIAPCloudGames.Infrastructure/
 COPY FIAPCloudGames.Tests/*.csproj ./FIAPCloudGames.Tests/
 RUN dotnet restore "FIAPCloudGames.sln"
 
-# Copia todo o resto do código fonte e publica a API.
+# Copia todo o código e faz o build
 COPY . .
-# O comando de publish compila o projeto e coloca os artefatos prontos para execução na pasta /app/publish.
-RUN dotnet publish "FIAPCloudGames.API/FIAPCloudGames.API.csproj" -c Release -o /app/publish
+# Usei --no-restore pois já restauramos antes.
+RUN dotnet publish "FIAPCloudGames.API/FIAPCloudGames.API.csproj" -c Release -o /app/publish --no-restore
 
-# Estágio 2: Criação da Imagem Final
-# Usamos a imagem ASP.NET runtime, que é muito menor que a SDK, pois só precisamos rodar a aplicação.
-FROM mcr.microsoft.com/dotnet/aspnet:9.0
+# Estágio 2: Criação da Imagem Final (Otimizada com Alpine)
+# A tag "alpine" usa uma distribuição Linux minúscula (aprox 5MB base)
+FROM mcr.microsoft.com/dotnet/aspnet:9.0-alpine
 WORKDIR /app
+
+# Instala dependências de globalização (necessário para SQL Client e formatação de moeda)
+RUN apk add --no-cache icu-libs
+
+# Configura o .NET para usar as libs de globalização instaladas
+ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
+
+# Copia os artefatos do estágio de build
 COPY --from=build /app/publish .
 
-# Define a porta que a aplicação irá expor dentro do contêiner.
+# Define a porta
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
 
-# Integração com o APM Newrelic
-# Install the agent
-RUN apt-get update && apt-get install -y wget ca-certificates gnupg \
-&& echo 'deb http://apt.newrelic.com/debian/ newrelic non-free' | tee /etc/apt/sources.list.d/newrelic.list \
-&& wget https://download.newrelic.com/548C16BF.gpg \
-&& apt-key add 548C16BF.gpg \
-&& apt-get update \
-&& apt-get install -y 'newrelic-dotnet-agent' \
-&& rm -rf /var/lib/apt/lists/*
+# Define usuário não-root para segurança (boa prática em K8s)
+USER app
 
-# Enable the agent
-ENV CORECLR_ENABLE_PROFILING=1 \
-CORECLR_PROFILER={36032161-FFC0-4B61-B559-F6C5D41BAE5A} \
-CORECLR_NEWRELIC_HOME=/usr/local/newrelic-dotnet-agent \
-CORECLR_PROFILER_PATH=/usr/local/newrelic-dotnet-agent/libNewRelicProfiler.so
-#
-
-# Define o comando para iniciar a aplicação quando o contêiner for executado.
 ENTRYPOINT ["dotnet", "FIAPCloudGames.API.dll"]

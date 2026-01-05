@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: games-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: games-service
+  template:
+    metadata:
+      labels:
+        app: games-service
+    spec:
+      containers:
+      - name: games-service
+        image: acrfiaprodrigoborges.azurecr.io/tc-rodrigo-fiap-microservice-games:latest
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "250m"
+            memory: "256Mi"
+        env:
+        - name: ConnectionStrings__Main
+          valueFrom:
+            secretKeyRef:
+              name: game-secrets
+        - name: AuthKey
+          valueFrom:
+            secretKeyRef:
+              name: game-secrets
+              key: AuthKey
+        - name: Jwt__Key
+          valueFrom:
+            secretKeyRef:
+              name: game-secrets
+              key: Jwt__Key
+        - name: Jwt__Issuer
+          valueFrom:
+            secretKeyRef:
+              name: game-secrets
+              key: Jwt__Issuer
+        - name: Jwt__Audience
+          valueFrom:
+            secretKeyRef:
+              name: game-secrets
+              key: Jwt__Audience
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: games-service
+spec:
+  type: LoadBalancer # Cria um IP público para acesso externo
+  selector:
+    app: games-service
+  ports:
+  - port: 80
+    targetPort: 8080
+---
+# Requisito de HPA (Auto Scaling)
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: games-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: games-service
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 50

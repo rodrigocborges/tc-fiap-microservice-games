@@ -1,4 +1,4 @@
-name: 'CD - Build, Push and Deploy to Azure'
+name: 'CD - Build, Push and Deploy to AKS'
 
 on:
   push:
@@ -6,10 +6,10 @@ on:
       - master
 
 env:
-  AZURE_WEBAPP_NAME: 'tc-rodrigo-fiap-microservice-games' 
   IMAGE_NAME: 'tc-rodrigo-fiap-microservice-games'
   AZURE_RESOURCE_GROUP: 'estudos-fiap'
   ACR_LOGIN_SERVER: 'acrfiaprodrigoborges.azurecr.io'
+  CLUSTER_NAME: 'cluster-fiap-rodrigo'
 
 jobs:
   build_and_deploy:
@@ -36,20 +36,30 @@ jobs:
           docker build . -f Dockerfile -t ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
           docker push ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
-      - name: 'Deploy to Azure App Service'
-        uses: azure/webapps-deploy@v2
+      # 1. Conecta ao Cluster AKS
+      - name: 'Set AKS Context'
+        uses: azure/aks-set-context@v3
         with:
-          app-name: ${{ env.AZURE_WEBAPP_NAME }}
-          images: '${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}'
+          resource-group: ${{ env.AZURE_RESOURCE_GROUP }}
+          cluster-name: ${{ env.CLUSTER_NAME }}
 
-      - name: 'Set App Settings'
-        uses: azure/cli@v1
-        with:
-          inlineScript: |
-            az webapp config appsettings set --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.AZURE_WEBAPP_NAME }} --settings \
-            "Elasticsearch__Url=${{ secrets.ELASTICSEARCH_URL }}" \
-            "Elasticsearch__Credentials=${{ secrets.ELASTICSEARCH_CREDENTIALS }}" \
-            "Jwt__Key=${{ secrets.JWT_KEY }}" \
-            "Jwt__Issuer=${{ secrets.JWT_ISSUER }}" \
-            "Jwt__Audience=${{ secrets.JWT_AUDIENCE }}" \
-            "Jwt__ExpiresInMinutes=60"
+      # 2. Cria as Secrets no Kubernetes
+      - name: 'Create/Update Kubernetes Secrets'
+        run: |
+          kubectl create secret generic game-secrets \
+            --from-literal=ConnectionStrings__Main='${{ secrets.DB_CONNECTION_STRING }}' \
+            --from-literal=AuthKey='${{ secrets.AUTH_KEY }}' \
+            --from-literal=Jwt__Key='${{ secrets.JWT_KEY }}' \
+            --from-literal=Jwt__Issuer='${{ secrets.JWT_ISSUER }}' \
+            --from-literal=Jwt__Audience='${{ secrets.JWT_AUDIENCE }}' \
+            --from-literal=Jwt__ExpiresInMinutes='60' \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      # 3. Aplica o Manifesto YAML
+      - name: 'Deploy to Kubernetes'
+        run: |
+          # Substitui a imagem no arquivo YAML pela nova tag (SHA do commit)
+          sed -i "s|image: .*|image: ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}|g" k8s/games-deployment.yaml
+          
+          # Aplica o deploy
+          kubectl apply -f k8s/games-deployment.yaml
