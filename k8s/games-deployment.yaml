@@ -50,6 +50,21 @@ spec:
             secretKeyRef:
               name: game-secrets
               key: Jwt__Audience
+        - name: Jwt__ExpiresInMinutes
+          valueFrom:
+            secretKeyRef:
+              name: game-secrets
+              key: Jwt__ExpiresInMinutes
+        - name: Elasticsearch__Url
+          valueFrom:
+            secretKeyRef:
+              name: game-secrets
+              key: Elasticsearch__Url
+        - name: Elasticsearch__Credentials
+          valueFrom:
+            secretKeyRef:
+              name: game-secrets
+              key: Elasticsearch__Credentials
 ---
 apiVersion: v1
 kind: Service
